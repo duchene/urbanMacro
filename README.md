@@ -1,4 +1,4 @@
-## This repository accompanies the manuscript "Urban colonization is driven by a mixture of evolutionarily conserved and labile traits"
+## This repository accompanies the manuscript "Traits that allow urban colonization are a macroevolutionary source of biodiversity"
 
 The data used for analyses can be loaded into R using the *load* function.
 
