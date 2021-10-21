@@ -7,48 +7,13 @@ load("all.data.Rdata")
 
 set.seed(123)
 
-### Tests of phylogenetic signal in continuous traits
-
-print("Starting phylogenetic signal analyses")
-
-# Colour dichromatism
-phylosig(tr925, dat925[tr925$tip.label,]$ColDichrom, method = "K", test = T)
-phylosig(tr925, dat925[tr925$tip.label,]$ColDichrom, method = "lambda", test = T)
-
-# Body mass
-phylosig(tr925, dat925[tr925$tip.label,]$LogBodyMass, method = "K", test = T)
-phylosig(tr925, dat925[tr925$tip.label,]$LogBodyMass, method = "lambda", test = T)
-
-# HWI
-phylosig(tr925, dat925[tr925$tip.label,]$hwi, method = "K", test = T)
-phylosig(tr925, dat925[tr925$tip.label,]$hwi, method = "lambda", test = T)
-
-# Brain size
-brdat <- dat925[!is.na(dat925$BrainSize),]
-brtr <- drop.tip(tr925, tr925$tip.label[which(!tr925$tip.label %in% rownames(brdat))])
-phylosig(brtr, brdat[brtr$tip.label,]$BrainSize, method = "K", test = T)
-phylosig(brtr, brdat[brtr$tip.label,]$BrainSize, method = "lambda", test = T)
-
-### Tests of phylogenetic signal in binary traits
-
-dat925$species <- rownames(dat925)
-datcomp <- comparative.data(phy = tr925, data = dat925, names.col=species)
-
-# Carnivory
-datfpdcarn <- phylo.d(data=datcomp, binvar = Carnivore, permut = 1000)
-
-# Urban colonization
-datfpd <- phylo.d(data=datcomp, binvar = Urban, permut = 1000)
-
-# Plot results of test of phylogenetic signal in urban colonization
-#plot(datfpd)
-
 ### BiSSE analyses
 
 print("Starting BiSSE analyses")
 
 tr925 <- ladderize(tr925)
 sampfrac1 <- 925 / 5966
+#urban1 <- (dat925$Urban - 1) * -1
 urban1 <- dat925$Urban
 names(urban1) <- rownames(dat925)
 
@@ -124,7 +89,7 @@ noto.obs <- treestat(tr925, state=urban1[tr925$tip.label], func=noto)
 urbsamp.f1 <- 590 / (0.1 * 5966)
 nurbsamp.f1 <- 335 / (0.9 * 5966)
 
-sims.bisse1 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f1, urbsamp.f1)), simplify = F))
+sims.bisse1 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f1, nurbsamp.f1)), simplify = F))
 names(sims.bisse1) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd1 <- lapply(1:7, function(x) lapply(sims.bisse1[[x]], treestat, func = sscd))
 stat.noto1 <- lapply(1:7, function(x) lapply(sims.bisse1[[x]], treestat, func = noto))
@@ -152,7 +117,7 @@ print("30% sampling")
 urbsamp.f3 <- 590 / (0.3 * 5966)
 nurbsamp.f3 <- 335 / (0.7 * 5966)
 
-sims.bisse3 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f3, urbsamp.f3)), simplify = F))
+sims.bisse3 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f3, nurbsamp.f3)), simplify = F))
 names(sims.bisse3) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd3 <- lapply(1:7, function(x) lapply(sims.bisse3[[x]], treestat, func = sscd))
 stat.noto3 <- lapply(1:7, function(x) lapply(sims.bisse3[[x]], treestat, func = noto))
@@ -166,7 +131,7 @@ print("40% sampling")
 urbsamp.f4 <- 590 / (0.4 * 5966)
 nurbsamp.f4 <- 335 / (0.6 * 5966)
 
-sims.bisse4 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f4, urbsamp.f4)), simplify = F))
+sims.bisse4 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f4, nurbsamp.f4)), simplify = F))
 names(sims.bisse4) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd4 <- lapply(1:7, function(x) lapply(sims.bisse4[[x]], treestat, func = sscd))
 stat.noto4 <- lapply(1:7, function(x) lapply(sims.bisse4[[x]], treestat, func = noto))
@@ -180,7 +145,7 @@ print("50% sampling")
 urbsamp.f5 <- 590 / (0.5 * 5966)
 nurbsamp.f5 <- 335 / (0.5 * 5966)
 
-sims.bisse5 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f5, urbsamp.f5)), simplify = F))
+sims.bisse5 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f5, nurbsamp.f5)), simplify = F))
 names(sims.bisse5) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd5 <- lapply(1:7, function(x) lapply(sims.bisse5[[x]], treestat, func = sscd))
 stat.noto5 <- lapply(1:7, function(x) lapply(sims.bisse5[[x]], treestat, func = noto))
@@ -195,7 +160,7 @@ print("60% sampling")
 urbsamp.f6 <- 590 / (0.6 * 5966)
 nurbsamp.f6 <- 335 / (0.4 * 5966)
 
-sims.bisse6 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f6, urbsamp.f6)), simplify = F))
+sims.bisse6 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f6, nurbsamp.f6)), simplify = F))
 names(sims.bisse6) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd6 <- lapply(1:7, function(x) lapply(sims.bisse6[[x]], treestat, func = sscd))
 stat.noto6 <- lapply(1:7, function(x) lapply(sims.bisse6[[x]], treestat, func = noto))
@@ -209,7 +174,7 @@ print("70% sampling")
 urbsamp.f7 <- 590 / (0.7 * 5966)
 nurbsamp.f7 <- 335 / (0.3 * 5966)
 
-sims.bisse7 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f7, urbsamp.f7)), simplify = F))
+sims.bisse7 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f7, nurbsamp.f7)), simplify = F))
 names(sims.bisse7) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd7 <- lapply(1:7, function(x) lapply(sims.bisse7[[x]], treestat, func = sscd))
 stat.noto7 <- lapply(1:7, function(x) lapply(sims.bisse7[[x]], treestat, func = noto))
@@ -223,7 +188,7 @@ print("80% sampling")
 urbsamp.f8 <- 590 / (0.8 * 5966)
 nurbsamp.f8 <- 335 / (0.2 * 5966)
 
-sims.bisse8 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f8, urbsamp.f8)), simplify = F))
+sims.bisse8 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f8, nurbsamp.f8)), simplify = F))
 names(sims.bisse8) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd8 <- lapply(1:7, function(x) lapply(sims.bisse8[[x]], treestat, func = sscd))
 stat.noto8 <- lapply(1:7, function(x) lapply(sims.bisse8[[x]], treestat, func = noto))
@@ -237,7 +202,7 @@ print("90% sampling")
 urbsamp.f9 <- 590 / (0.9 * 5966)
 nurbsamp.f9 <- 335 / (0.1 * 5966)
 
-sims.bisse9 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(nurbsamp.f9, urbsamp.f9)), simplify = F))
+sims.bisse9 <- lapply(c(1:5, 7:8), function(x) replicate(1000, treesim(as.numeric(modelstable[x,]), N0 = 335, N1 = 590, sampling.f = c(urbsamp.f9, nurbsamp.f9)), simplify = F))
 names(sims.bisse9) <- paste0("sim.", rownames(modelstable)[c(1:5, 7:8)])
 stat.sscd9 <- lapply(1:7, function(x) lapply(sims.bisse9[[x]], treestat, func = sscd))
 stat.noto9 <- lapply(1:7, function(x) lapply(sims.bisse9[[x]], treestat, func = noto))

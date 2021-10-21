@@ -1,0 +1,99 @@
+library(ape)
+require(diversitree)
+require(geiger)
+library(TreeSim)
+library(diversitree)
+library(hisse)
+
+load("all.data.Rdata")
+
+set.seed(123)
+
+# QuaSSE analysis
+# Overall 18 models are run (3*sp, 3*ext, 2*drift)
+
+# Square root of relative abundance data - Hellinger transform
+# Using a transformation of a power of 0.15 makes non-zeroes more gaussian-looking
+
+dat925$RelAbundance <- sqrt(dat925$RelAbundance)
+
+relab.sd <- 0.01
+control.C.1 <- list(dt.max = 1/200, tips.combined = T)
+relab <- as.numeric(dat925[tr925$tip.label,"RelAbundance"])
+names(relab) <- tr925$tip.label
+
+tr849 <- drop.tip(tr925, names(relab)[which(is.na(relab))])
+relab849 <- relab[tr849$tip.label]
+
+# Define all models
+
+make.passer <- function(lambda, mu) make.quasse(tree = tr849, states = relab849, states.sd = relab.sd, lambda = lambda, mu = mu, control = control.C.1, sampling.f = 0.14)
+nodrift <- function(f) constrain(f, drift ~ 0)
+p <- starting.point.quasse(tr849, relab849)
+xr <- range(relab849) + c(-1,1) * 20 * p["diffusion"]
+linear.x <- make.linear.x(xr[1], xr[2])
+
+f.cc <- make.passer(constant.x, constant.x)
+f.lc <- make.passer(linear.x, constant.x)
+f.sc <- make.passer(sigmoid.x, constant.x)
+f.cl <- make.passer(constant.x, linear.x)
+f.ll <- make.passer(linear.x, linear.x)
+f.sl <- make.passer(sigmoid.x, linear.x)
+f.cs <- make.passer(constant.x, sigmoid.x)
+f.ls <- make.passer(linear.x, sigmoid.x)
+f.ss <- make.passer(sigmoid.x, sigmoid.x)
+
+control <- list(parscale=.1, reltol=0.001)
+mle.cc <- find.mle(nodrift(f.cc), p, lower=0, control = control, verbose=0)
+
+p.cc <- mle.cc$par
+p.lc <- c(p.cc[1], l.m=0, p.cc[2:3])
+p.sc <- c(p.cc[1], p.cc[1], mean(xr), 1, p.cc[2:3])
+names(p.sc) <- argnames(nodrift(f.sc))
+mle.lc <- find.mle(nodrift(f.lc), p.lc, control=control, verbose=0)
+mle.sc <- find.mle(nodrift(f.sc), p.sc, control=control, verbose=0)
+
+p.cl <- c(p.cc[1:2], m.m = 0, p.cc[3])
+p.ll <- c(p.cc[1], l.m = 0, p.cc[2], m.m = 0, p.cc[3])
+p.sl <- c(p.cc[1], p.cc[1], mean(xr), 1, p.cc[2], m.m = 0, p.cc[3])
+names(p.sl) <- argnames(nodrift(f.sl))
+mle.cl <- find.mle(nodrift(f.cl), p.cl, control=control, verbose=0)
+mle.ll <- find.mle(nodrift(f.ll), p.ll, control=control, verbose=0)
+mle.sl <- find.mle(nodrift(f.sl), p.sl, control=control, verbose=0)
+
+p.cs <- c(p.cc[1:2], p.cc[2], mean(xr), 1, p.cc[3])
+p.ls <- c(p.cc[1], l.m = 0, p.cc[2], p.cc[2], mean(xr), 1, p.cc[3])
+p.ss <- c(p.cc[1], p.cc[1], mean(xr), 1, p.cc[2], p.cc[2], mean(xr), 1, p.cc[3])
+names(p.ss) <- argnames(nodrift(f.ss))
+mle.cs <- find.mle(nodrift(f.cs), p.cs, control=control, verbose=0)
+mle.ls <- find.mle(nodrift(f.ls), p.ls, control=control, verbose=0)
+mle.ss <- find.mle(nodrift(f.ss), p.ss, control=control, verbose=0)
+
+mle.d.cc <- find.mle(f.cc, coef(mle.cc, TRUE), control=control, verbose=0)
+mle.d.lc <- find.mle(f.lc, coef(mle.lc, TRUE), control=control, verbose=0)
+mle.d.sc <- find.mle(f.sc, coef(mle.sc, TRUE), control=control, verbose=0)
+
+mle.d.cl <- find.mle(f.cl, coef(mle.cl, TRUE), control=control, verbose=0)
+mle.d.ll <- find.mle(f.ll, coef(mle.ll, TRUE), control=control, verbose=0)
+mle.d.sl <- find.mle(f.sl, coef(mle.sl, TRUE), control=control, verbose=0)
+
+mle.d.cs <- find.mle(f.cs, coef(mle.cs, TRUE), control=control, verbose=0)
+mle.d.ls <- find.mle(f.ls, coef(mle.ls, TRUE), control=control, verbose=0)
+mle.d.ss <- find.mle(f.ss, coef(mle.ss, TRUE), control=control, verbose=0)
+
+# Consider only adding the drift parameter only for the best-fitting non-drift model.
+
+anova(mle.cc, lin.con = mle.lc, sig.con = mle.sc, con.lin = mle.cl, lin.lin = mle.ll, sig.lin = mle.sl, con.sig = mle.cs, lin.sig = mle.ls, sig.sig = mle.ss, drift.con.con = mle.d.cc, drift.lin.con = mle.d.lc, drift.sig.con = mle.d.sc, drift.con.lin = mle.d.cl, drift.lin.lin = mle.d.ll, drift.sig.lin = mle.d.sl, drift.con.sig = mle.d.cs, drift.lin.sig = mle.d.ls, drift.sig.sig = mle.d.ss)
+
+
+
+## quasse model with single diversification rate - NOT NEEDED?????
+lik.constant <- constrain(lik.nodrift, l.y1 ~ l.y0, l.xmid ~ 0, l.r ~ 1)
+fit.constant <- find.mle(lik.constant, p.start[argnames(lik.constant)], control=list(parscale=.1), lower=0, verbose=0)
+##
+
+# QuaSSE simulations? - NOT NEEDED?????
+
+lambda <- function(x) sigmoid.x(x, 0.1, 0.2, 0, 2.5)
+mu <- function(x) constant.x(x, 0.03)
+char <- make.brownian.with.drift(0, 0.025)

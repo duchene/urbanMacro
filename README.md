@@ -1,9 +1,3 @@
-## This repository accompanies the manuscript "Traits that allow urban colonization are a macroevolutionary source of biodiversity"
+## This repository accompanies the manuscript "Bird lineages colonising urban habitats have diversified at high rates across deep time"
 
-The data used for analyses can be loaded into R using the *load* function.
-
-Once the data have been loaded. The following elements will be found:
-
-*dat925* and *tr925* are the data frame and phylogenetic tree object used, respectively.
-
-The script *analyses.scripts.Rscript* includes all the analyses perfromed in this study, and can be run directly from within this folder to obtain a replicate of the analyses.
+The scripts of all analyses are the files with the *Rscript* extension. The data used for analyses and results are in the files with the *Rdata* extension, and can be loaded into R using the *load* function.
