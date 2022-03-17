@@ -1,0 +1,102 @@
+library(ape)
+require(diversitree)
+require(geiger)
+library(TreeSim)
+library(diversitree)
+library(hisse)
+library(parallel)
+
+load("all.data.Rdata")
+
+set.seed(1234)
+
+hd <- dat925[,c("Species", "Urban")]
+
+sampfrac <- 925 / 5966
+
+init.pars <- hisse:::starting.point.generator(tr925, k = 2, sampfrac, q.div = 5, yule=FALSE)
+
+# BiSSE - null with equal diversification and transition rates
+
+turnover <- c(1,1)
+extinction.fraction <- c(1,1)
+f <- rep(sampfrac, 2)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=0)
+trans.rate <- ParEqual(trans.rate, c(1, 2))
+
+NewStarting <- function(iteration){
+	turn.start <- exp(rnorm(1, log(init.pars[1]+init.pars[5]), 1))
+	eps.start <- rep(runif(1, 0, 1), 1)
+    trans.start <- exp(rnorm(1, log(init.pars[5])))
+	starting.vals <- c(turn.start, eps.start, trans.start)
+	dull.null <- hisse(phy=tr925, data=hd, f=f, turnover=turnover, eps=extinction.fraction, hidden.states=FALSE, trans.rate=trans.rate, starting.vals = starting.vals)
+	dull.null.marg <- MarginReconHiSSE(phy=tr925, data=hd, f=f, pars = dull.null$solution, hidden.states=1, AIC=dull.null$AIC, n.cores=4)
+	results <- list(dull.null, dull.null.marg)
+	return(results)
+}
+bisse.null.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+# BiSSE - different diversification rates
+
+turnover <- c(1,2)
+extinction.fraction <- c(1,1)
+f <- rep(sampfrac, 2)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=0)
+trans.rate <- ParEqual(trans.rate, c(1, 2))
+bisse.div.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+# BiSSE - different transition rates
+
+turnover <- c(1,1)
+extinction.fraction <- c(1,1)
+f <- rep(sampfrac, 2)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=0)
+bisse.trans.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+# BiSSE full - different diversification and transition rates
+
+turnover <- c(1,2)
+extinction.fraction <- c(1,1)
+f <- rep(sampfrac, 2)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=0)
+bisse.full.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+# HiSSE - CID2 null with transition rates rates and hidden trait - In this model there are transition rates between states, but which are linked in observed and hidden traits, plus a transition rate between the observed and hidden trait. Rates of diversification once again only differ between observed and hidden trait (not within each).
+
+turnover <- c(1, 1, 2, 2)
+extinction.fraction <- c(1, 1, 1, 1)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=1, make.null=TRUE)
+NewStarting <- function(iteration){
+	turn.start <- exp(rnorm(1, log(init.pars[1]+init.pars[5]), 1))
+	eps.start <- rep(runif(1, 0, 1), 1)
+    trans.start <- exp(rnorm(1, log(init.pars[5])))
+	starting.vals <- c(turn.start, eps.start, trans.start)
+	dull.null <- hisse(phy=tr925, data=hd, f=f, turnover=turnover, eps=extinction.fraction, hidden.states=TRUE, trans.rate=trans.rate, starting.vals = starting.vals)
+#	dull.null.marg <- MarginReconHiSSE(phy=tr925, data=hd, f=f, pars = dull.null$solution, hidden.states=2, AIC=dull.null$AIC, n.cores=4)
+	results <- list(dull.null)#, dull.null.marg)
+	return(results)
+}
+hisse.cid2.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+# HiSSE - CID4 null with two hidden traits - THIS IS THE NULL MODEL OF THE FULL HISSE MODEL
+
+turnover <- c(1, 1, 2, 2, 3, 3, 4, 4)
+extinction.fraction <- c(1, 1, 1, 1, 1, 1, 1, 1)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=3, make.null=TRUE)
+hisse.cid4.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+# HiSSE - Simple model with a reduced transition matrix
+
+turnover <- c(1,2,3,4)
+extinction.fraction <- c(1,1,1,1)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=1, make.null=TRUE)
+hisse.simple.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+# HiSSE - Full model with two observed rates and two hidden rates
+
+turnover <- c(1,2,3,4)
+extinction.fraction <- c(1,1,1,1)
+trans.rate <- TransMatMakerHiSSE(hidden.traits=1)
+hisse.full.results <- mclapply(1:10, NewStarting, mc.cores=8)
+
+save(bisse.null.results, bisse.div.results, bisse.trans.results, bisse.full.results, hisse.cid2.results, hisse.cid4.results, hisse.simple.results, hisse.full.results, file =  "hisse_results_reps.Rdata")
